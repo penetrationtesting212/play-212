@@ -10,7 +10,8 @@ import {
   applyEnhancement,
   getEnhancementForValidation,
   executeScript,
-  batchEnhanceScripts
+  batchEnhanceScripts,
+  updateWorkflowStatus
 } from '../controllers/script.controller';
 
 const router = Router();
@@ -44,5 +45,8 @@ router.post('/:id/execute', authMiddleware, executeScript);
 
 // Batch enhance multiple scripts
 router.post('/batch/enhance', authMiddleware, batchEnhanceScripts);
+
+// Update workflow status (for human validation actions)
+router.post('/:id/update-workflow', authMiddleware, updateWorkflowStatus);
 
 export default router;

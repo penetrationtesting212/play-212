@@ -81,7 +81,8 @@ const swaggerDefinition = {
     { name: 'Auth' },
     { name: 'Scripts' },
     { name: 'TestRuns' },
-    { name: 'Extensions' }
+    { name: 'Extensions' },
+    { name: 'TestData' }
   ],
   paths: {
     '/auth/login': {
@@ -321,6 +322,235 @@ const swaggerDefinition = {
         tags: ['Extensions'],
         summary: 'Ping backend',
         responses: { '200': { description: 'OK' } }
+      }
+    },
+
+    '/testdata/generate': {
+      post: {
+        tags: ['TestData'],
+        summary: 'Generate test data',
+        description: 'Generate various types of test data including boundary values, equivalence partitions, and security test cases',
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                properties: {
+                  dataType: {
+                    type: 'string',
+                    enum: ['user', 'product', 'order', 'transaction', 'custom', 'boundaryValue', 'equivalencePartition', 'securityTest'],
+                    description: 'Type of test data to generate'
+                  },
+                  count: {
+                    type: 'number',
+                    description: 'Number of records to generate',
+                    example: 10
+                  },
+                  schema: {
+                    type: 'object',
+                    description: 'Custom schema for custom data type'
+                  },
+                  locale: {
+                    type: 'string',
+                    description: 'Locale for data generation',
+                    example: 'en-US'
+                  },
+                  options: {
+                    type: 'object',
+                    properties: {
+                      includeEdgeCases: { type: 'boolean', description: 'Include edge cases' },
+                      includeNullValues: { type: 'boolean', description: 'Include null values' },
+                      includeSpecialChars: { type: 'boolean', description: 'Include special characters' },
+                      fieldName: { type: 'string', description: 'Field name for boundary/partition testing', example: 'amount' },
+                      fieldType: { type: 'string', enum: ['number', 'string', 'date'], description: 'Field type for boundary testing' },
+                      minValue: { type: 'number', description: 'Minimum value for boundary testing', example: 0.01 },
+                      maxValue: { type: 'number', description: 'Maximum value for boundary testing', example: 999999.99 },
+                      partitionType: { type: 'string', enum: ['valid', 'invalid', 'boundary', 'all'], description: 'Partition type for equivalence testing' }
+                    }
+                  }
+                },
+                required: ['dataType', 'count']
+              },
+              examples: {
+                'boundaryValue': {
+                  summary: 'Boundary Value Analysis',
+                  value: {
+                    dataType: 'boundaryValue',
+                    count: 9,
+                    options: {
+                      fieldName: 'transferAmount',
+                      fieldType: 'number',
+                      minValue: 0.01,
+                      maxValue: 999999.99
+                    }
+                  }
+                },
+                'equivalencePartition': {
+                  summary: 'Equivalence Partitioning',
+                  value: {
+                    dataType: 'equivalencePartition',
+                    count: 15,
+                    options: {
+                      fieldName: 'transferAmount',
+                      partitionType: 'all'
+                    }
+                  }
+                },
+                'securityTest': {
+                  summary: 'Security Testing Data',
+                  value: {
+                    dataType: 'securityTest',
+                    count: 20
+                  }
+                },
+                'user': {
+                  summary: 'User Data',
+                  value: {
+                    dataType: 'user',
+                    count: 10,
+                    options: {
+                      includeEdgeCases: true
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        responses: {
+          '200': {
+            description: 'Test data generated successfully',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    success: { type: 'boolean' },
+                    data: {
+                      type: 'array',
+                      items: { type: 'object' }
+                    },
+                    metadata: {
+                      type: 'object',
+                      properties: {
+                        generatedCount: { type: 'number' },
+                        dataType: { type: 'string' },
+                        processingTime: { type: 'number' }
+                      }
+                    }
+                  }
+                },
+                examples: {
+                  'boundaryValue': {
+                    summary: 'Boundary Value Response',
+                    value: {
+                      success: true,
+                      data: [
+                        {
+                          id: 0,
+                          testType: 'boundary_value_analysis',
+                          fieldName: 'transferAmount',
+                          fieldType: 'number',
+                          boundaryType: 'min',
+                          description: 'Minimum valid value',
+                          value: 0.01,
+                          isValid: true,
+                          expectedResult: 'accept',
+                          range: { min: 0.01, max: 999999.99 }
+                        }
+                      ],
+                      metadata: {
+                        generatedCount: 1,
+                        dataType: 'boundaryValue',
+                        processingTime: 15
+                      }
+                    }
+                  },
+                  'equivalencePartition': {
+                    summary: 'Equivalence Partition Response',
+                    value: {
+                      success: true,
+                      data: [
+                        {
+                          id: 0,
+                          testType: 'equivalence_partitioning',
+                          fieldName: 'transferAmount',
+                          partition: 'valid',
+                          partitionClass: 'Small transfers',
+                          value: 250,
+                          range: '0.01 - 1000',
+                          isValid: true,
+                          expectedResult: 'accept',
+                          errorCode: null,
+                          testScenario: 'Test transferAmount with Small transfers'
+                        }
+                      ],
+                      metadata: {
+                        generatedCount: 1,
+                        dataType: 'equivalencePartition',
+                        processingTime: 12
+                      }
+                    }
+                  },
+                  'securityTest': {
+                    summary: 'Security Test Response',
+                    value: {
+                      success: true,
+                      data: [
+                        {
+                          id: 0,
+                          testType: 'security_test',
+                          attackType: 'sql_injection',
+                          severity: 'critical',
+                          owasp: 'A03:2021 - Injection',
+                          payload: "' OR '1'='1",
+                          targetField: 'login_username',
+                          description: 'Classic SQLi bypass',
+                          expectedBehavior: 'reject_and_sanitize',
+                          bankingImpact: 'Unauthorized access to customer accounts, data breach'
+                        }
+                      ],
+                      metadata: {
+                        generatedCount: 1,
+                        dataType: 'securityTest',
+                        processingTime: 8
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          '400': {
+            description: 'Invalid request',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    success: { type: 'boolean', example: false },
+                    error: { type: 'string', example: 'Invalid data type' }
+                  }
+                }
+              }
+            }
+          },
+          '500': {
+            description: 'Server error',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    success: { type: 'boolean', example: false },
+                    error: { type: 'string', example: 'Failed to generate test data' }
+                  }
+                }
+              }
+            }
+          }
+        }
       }
     }
   }

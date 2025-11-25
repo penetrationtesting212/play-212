@@ -21,6 +21,9 @@ import mlEnhancementRoutes from './routes/ml-enhancement.routes';
 import testDataManagementRoutes from './routes/testdata-management.routes';
 import externalApiRoutes from './routes/external-api.routes';
 import aiEnhancementRoutes from './routes/ai-enhancement.routes';
+import aiAnalysisRoutes from './routes/ai-analysis.routes';
+import workflowRoutes from './routes/workflow.routes';
+import pipelineRoutes from './routes/pipeline.routes';
 import pool from './db';
 
 // Middleware
@@ -138,6 +141,9 @@ app.get('/api', (_req, res) => {
       '/api/allure',
       '/api/ml/*',
       '/api/ai-enhancement/*',
+      '/api/ai-analysis/*',
+      '/api/workflow/*',
+      '/api/pipeline/*',
       '/api-docs',
       '/api-docs.json'
     ]
@@ -161,6 +167,9 @@ app.use('/api/ml', mlEnhancementRoutes);
 app.use('/api/testdata', testDataManagementRoutes);
 app.use('/api/external-api', externalApiRoutes);
 app.use('/api/ai-enhancement', aiEnhancementRoutes);
+app.use('/api/ai-analysis', aiAnalysisRoutes);
+app.use('/api/workflow', workflowRoutes);
+app.use('/api/pipeline', pipelineRoutes);
 
 app.use((_req, res) => { res.status(404).json({ error: 'Route not found' }); });
 app.use(errorHandler);

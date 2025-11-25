@@ -1,0 +1,286 @@
+================================================================================
+COMPLETE FLOW: PLAYWRIGHT SCREENSHOT CAPTURE → AI ANALYSIS
+================================================================================
+
+PHASE 1: INITIAL SETUP
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+┌─────────────────────────────────────────────────────────────────────────┐
+│  Test Setup                                                             │
+├─────────────────────────────────────────────────────────────────────────┤
+│  1. Create screenshot directories                                      │
+│     ./test-screenshots/baselines/                                      │
+│     ./test-screenshots/current/                                        │
+│                                                                         │
+│  2. Configure test parameters                                          │
+│     - URL to test                                                      │
+│     - Viewport size (desktop/tablet/mobile)                            │
+│     - Tolerance level (e.g., 0.95 = 95% similarity)                    │
+│     - Mask selectors (dynamic content)                                 │
+└─────────────────────────────────────────────────────────────────────────┘
+
+
+PHASE 2: PLAYWRIGHT SCREENSHOT CAPTURE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Step 1: Navigate to Page
+┌─────────────────────────────────────────────────────────────────────────┐
+│  await page.goto('https://example.com');                               │
+│  await page.waitForLoadState('networkidle');                           │
+└─────────────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+Step 2: Prepare for Screenshot
+┌─────────────────────────────────────────────────────────────────────────┐
+│  Options:                                                               │
+│  • Set viewport size (if responsive testing)                           │
+│  • Disable animations for consistency                                  │
+│  • Wait for specific elements to load                                  │
+│  • Add masking for dynamic content                                     │
+│                                                                         │
+│  await page.setViewportSize({ width: 1920, height: 1080 });           │
+│  await page.waitForSelector('h1', { state: 'visible' });              │
+└─────────────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+Step 3: Capture Screenshot (3 Methods)
+┌─────────────────────────────────────────────────────────────────────────┐
+│  METHOD 1: Save to File                                                │
+│  ─────────────────────────────────────────────────────────────────────  │
+│  await page.screenshot({                                               │
+│    path: './screenshots/current.png',                                  │
+│    fullPage: true,                                                     │
+│    animations: 'disabled',                                             │
+│    mask: [page.locator('.timestamp')]                                  │
+│  });                                                                   │
+│  Result: PNG file saved to disk                                        │
+│                                                                         │
+│  METHOD 2: Capture to Buffer (Recommended for API)                     │
+│  ─────────────────────────────────────────────────────────────────────  │
+│  const buffer = await page.screenshot({                                │
+│    fullPage: true,                                                     │
+│    animations: 'disabled'                                              │
+│  });                                                                   │
+│  Result: Buffer in memory (faster, no disk I/O)                        │
+│                                                                         │
+│  METHOD 3: Element-Only Screenshot                                     │
+│  ─────────────────────────────────────────────────────────────────────  │
+│  const element = page.locator('header');                               │
+│  await element.screenshot({ path: './header.png' });                   │
+│  Result: Only specific element captured                                │
+└─────────────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+Step 4: Convert to Base64 (for API transmission)
+┌─────────────────────────────────────────────────────────────────────────┐
+│  From Buffer:                                                           │
+│  const base64 = buffer.toString('base64');                             │
+│                                                                         │
+│  From File:                                                            │
+│  const base64 = fs.readFileSync('screenshot.png', 'base64');           │
+│                                                                         │
+│  Result: String like "iVBORw0KGgoAAAANSUhEUgAA..."                     │
+└─────────────────────────────────────────────────────────────────────────┘
+
+
+PHASE 3: BASELINE COMPARISON
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Decision Point: Does Baseline Exist?
+┌─────────────────────────────────────────────────────────────────────────┐
+│  const baselinePath = './screenshots/baselines/test-name.png';         │
+│  const baselineExists = fs.existsSync(baselinePath);                   │
+└─────────────────────────────────────────────────────────────────────────┘
+                              │
+                ┌─────────────┴─────────────┐
+                │                           │
+                ▼                           ▼
+        NO - First Run              YES - Compare
+┌───────────────────────┐   ┌───────────────────────────────────────────┐
+│  Create Baseline      │   │  Read Both Screenshots                    │
+│  ───────────────────  │   │  ────────────────────────────────────────  │
+│  fs.copyFileSync(     │   │  const baseline = fs.readFileSync(        │
+│    currentPath,       │   │    baselinePath, 'base64'                 │
+│    baselinePath       │   │  );                                       │
+│  );                   │   │  const current = buffer.toString('base64');│
+│                       │   │                                           │
+│  Test Status: SKIP    │   │  Proceed to AI Analysis                   │
+│  (baseline created)   │   └───────────────────────────────────────────┘
+└───────────────────────┘                   │
+                                            ▼
+
+
+PHASE 4: AI ANALYSIS API CALL
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Step 1: Prepare API Request
+┌─────────────────────────────────────────────────────────────────────────┐
+│  const payload = {                                                      │
+│    before_screenshot: baselineBase64,                                   │
+│    after_screenshot: currentBase64,                                     │
+│    tolerance: 0.95                                                      │
+│  };                                                                     │
+└─────────────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+Step 2: Call Node.js Backend (Proxy)
+┌─────────────────────────────────────────────────────────────────────────┐
+│  POST http://localhost:3001/api/ai-analysis/visual-regression          │
+│  Body: { before_screenshot, after_screenshot, tolerance }              │
+└─────────────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+Step 3: Node.js Forwards to Python Service
+┌─────────────────────────────────────────────────────────────────────────┐
+│  Node.js Backend (ai-analysis-proxy.service.ts)                        │
+│  ──────────────────────────────────────────────────────────────────────  │
+│  axios.post('http://localhost:8000/api/ai-analysis/visual-regression', │
+│    payload                                                              │
+│  );                                                                     │
+└─────────────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+Step 4: Python Service Processes
+┌─────────────────────────────────────────────────────────────────────────┐
+│  Python FastAPI Service (main.py)                                      │
+│  ──────────────────────────────────────────────────────────────────────  │
+│  1. Decode base64 strings to bytes                                     │
+│     before_bytes = base64.b64decode(before_screenshot)                 │
+│     after_bytes = base64.b64decode(after_screenshot)                   │
+│                                                                         │
+│  2. Analyze image metadata                                             │
+│     - Format: PNG/JPEG/WEBP                                            │
+│     - Size: bytes                                                      │
+│     - Dimensions: width x height                                       │
+│                                                                         │
+│  3. Calculate similarity                                               │
+│     similarity = calculate_similarity(before_bytes, after_bytes)       │
+│     # Returns 0.0 to 1.0 (0% to 100% match)                           │
+│                                                                         │
+│  4. Detect specific changes                                            │
+│     - Size differences (bytes/dimensions)                              │
+│     - Format changes                                                   │
+│     - Layout shifts                                                    │
+│     - Color variations                                                 │
+│                                                                         │
+│  5. Build context for LLM                                              │
+│     context = f"""                                                     │
+│       Before: {before_meta}                                            │
+│       After: {after_meta}                                              │
+│       Similarity: {similarity}                                         │
+│       Changes: {detected_changes}                                      │
+│     """                                                                │
+│                                                                         │
+│  6. Call LLM for human-readable analysis                               │
+│     llm_result = await llm_service.analyze_visual_changes(context)     │
+│     # LLM describes what changed and why it matters                    │
+│                                                                         │
+│  7. Generate recommendations                                           │
+│     - Severity assessment                                              │
+│     - Impact on users                                                  │
+│     - Accessibility concerns                                           │
+│     - Suggested actions                                                │
+│     - Playwright code snippets                                         │
+└─────────────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+Step 5: Return Comprehensive Response
+┌─────────────────────────────────────────────────────────────────────────┐
+│  Response Structure:                                                    │
+│  {                                                                      │
+│    "verdict": "PASS" | "FAIL",                                         │
+│    "similarity": 0.95,                                                 │
+│    "has_changes": true,                                                │
+│    "llm_description": "Header layout changed...",                      │
+│    "changes": [{ area, type, severity, description }],                │
+│    "recommendations": [{ priority, message, action }],                 │
+│    "accessibility_issues": [...],                                      │
+│    "playwright_insights": {                                            │
+│      "test_stability": "stable" | "unstable",                         │
+│      "suggested_tolerance": 0.92,                                      │
+│      "rerun_recommended": false                                        │
+│    },                                                                  │
+│    "suggested_playwright_code": {                                      │
+│      "assertion": "expect(page).toHaveScreenshot(...)",               │
+│      "with_masking": "mask: [page.locator(...)]",                     │
+│      "update_baseline_command": "npx playwright test --update..."     │
+│    }                                                                   │
+│  }                                                                      │
+└─────────────────────────────────────────────────────────────────────────┘
+
+
+PHASE 5: TEST ASSERTION & REPORTING
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Step 1: Receive AI Analysis Results
+┌─────────────────────────────────────────────────────────────────────────┐
+│  const response = await axios.post(...);                               │
+│  const analysis = response.data.data;                                  │
+└─────────────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+Step 2: Log AI Insights
+┌─────────────────────────────────────────────────────────────────────────┐
+│  console.log('Verdict:', analysis.verdict);                            │
+│  console.log('Similarity:', analysis.similarity);                      │
+│  console.log('LLM:', analysis.llm_description);                        │
+│  console.log('Changes:', analysis.change_summary.total);               │
+│                                                                         │
+│  analysis.recommendations.forEach(rec => {                             │
+│    console.log(`[${rec.priority}] ${rec.message}`);                   │
+│  });                                                                   │
+└─────────────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+Step 3: Make Test Assertion
+┌─────────────────────────────────────────────────────────────────────────┐
+│  expect(analysis.verdict).toBe('PASS');                                │
+│  expect(analysis.similarity).toBeGreaterThanOrEqual(0.95);             │
+└─────────────────────────────────────────────────────────────────────────┘
+                              │
+                ┌─────────────┴─────────────┐
+                │                           │
+                ▼                           ▼
+        PASS - Test Succeeds      FAIL - Test Fails
+┌───────────────────────┐   ┌───────────────────────────────────────────┐
+│  ✅ Success           │   │  ❌ Failure                               │
+│  ───────────────────  │   │  ────────────────────────────────────────  │
+│  • No action needed   │   │  Actions:                                 │
+│  • Continue CI/CD     │   │  1. Review AI recommendations             │
+│  • Generate report    │   │  2. Check suggested Playwright code       │
+│                       │   │  3. Decide:                               │
+│                       │   │     a) Update baseline (intentional)      │
+│                       │   │     b) Fix the issue (bug)                │
+│                       │   │     c) Adjust tolerance                   │
+│                       │   │                                           │
+│                       │   │  Update Baseline:                         │
+│                       │   │  npx playwright test --update-snapshots   │
+└───────────────────────┘   └───────────────────────────────────────────┘
+
+
+SUMMARY: DATA FLOW
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Playwright Test → Screenshot (PNG bytes) → Base64 Encoding → HTTP Request
+       ↓
+Node.js Backend (Port 3001) → Proxy Request → Python Service (Port 8000)
+       ↓
+Python: Decode → Analyze → LLM → Generate Insights → Return JSON
+       ↓
+Node.js: Forward Response → Playwright Test
+       ↓
+Test: Assert → Log → Report → PASS/FAIL
+
+
+KEY ADVANTAGES OF THIS FLOW:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✅ Automated - No manual comparison needed
+✅ AI-Powered - LLM explains changes in human language
+✅ Actionable - Provides specific recommendations and code
+✅ Accessibility - Detects WCAG violations
+✅ CI/CD Ready - Integrates with existing pipelines
+✅ Flexible - Adjustable tolerance, masking, viewports
+✅ Comprehensive - Covers layout, color, content, performance
+✅ Smart - Distinguishes intentional changes from bugs
+
+================================================================================

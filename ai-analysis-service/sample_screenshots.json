@@ -1,0 +1,115 @@
+{
+  "description": "Sample base64 screenshots for visual regression testing",
+  "samples": {
+    "red_pixel": {
+      "description": "1x1 red pixel PNG - Use as baseline",
+      "base64": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFBQIAX8jx0gAAAABJRU5ErkJggg==",
+      "format": "PNG",
+      "dimensions": "1x1",
+      "use_case": "Baseline screenshot for testing"
+    },
+    "blue_pixel": {
+      "description": "1x1 blue pixel PNG - Use as changed version",
+      "base64": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M/wHwAEBgIApD5fRAAAAABJRU5ErkJggg==",
+      "format": "PNG",
+      "dimensions": "1x1",
+      "use_case": "Changed screenshot to detect differences"
+    },
+    "green_pixel": {
+      "description": "1x1 green pixel PNG - Another variation",
+      "base64": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+P+fAQABbANV4E7xLgAAAABJRU5ErkJggg==",
+      "format": "PNG",
+      "dimensions": "1x1",
+      "use_case": "Alternative changed screenshot"
+    }
+  },
+  "api_examples": {
+    "example_1_identical": {
+      "title": "Compare identical screenshots (should PASS)",
+      "endpoint": "POST http://localhost:8000/api/ai-analysis/visual-regression",
+      "request": {
+        "before_screenshot": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFBQIAX8jx0gAAAABJRU5ErkJggg==",
+        "after_screenshot": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFBQIAX8jx0gAAAABJRU5ErkJggg==",
+        "tolerance": 0.95
+      },
+      "expected_verdict": "PASS",
+      "expected_similarity": 1.0
+    },
+    "example_2_different": {
+      "title": "Compare different screenshots (should FAIL)",
+      "endpoint": "POST http://localhost:8000/api/ai-analysis/visual-regression",
+      "request": {
+        "before_screenshot": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFBQIAX8jx0gAAAABJRU5ErkJggg==",
+        "after_screenshot": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M/wHwAEBgIApD5fRAAAAABJRU5ErkJggg==",
+        "tolerance": 0.95
+      },
+      "expected_verdict": "FAIL"
+    },
+    "example_3_lenient_tolerance": {
+      "title": "Use lenient tolerance (0.70)",
+      "endpoint": "POST http://localhost:8000/api/ai-analysis/visual-regression",
+      "request": {
+        "before_screenshot": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFBQIAX8jx0gAAAABJRU5ErkJggg==",
+        "after_screenshot": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M/wHwAEBgIApD5fRAAAAABJRU5ErkJggg==",
+        "tolerance": 0.70
+      },
+      "note": "More lenient tolerance may pass despite differences"
+    },
+    "example_4_strict_tolerance": {
+      "title": "Use strict tolerance (0.99)",
+      "endpoint": "POST http://localhost:8000/api/ai-analysis/visual-regression",
+      "request": {
+        "before_screenshot": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFBQIAX8jx0gAAAABJRU5ErkJggg==",
+        "after_screenshot": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFBQIAX8jx0gAAAABJRU5ErkJggg==",
+        "tolerance": 0.99
+      },
+      "note": "Strict tolerance requires near-perfect match"
+    }
+  },
+  "curl_commands": {
+    "test_identical": "curl -X POST http://localhost:8000/api/ai-analysis/visual-regression -H 'Content-Type: application/json' -d '{\"before_screenshot\":\"iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFBQIAX8jx0gAAAABJRU5ErkJggg==\",\"after_screenshot\":\"iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFBQIAX8jx0gAAAABJRU5ErkJggg==\",\"tolerance\":0.95}'",
+    "test_different": "curl -X POST http://localhost:8000/api/ai-analysis/visual-regression -H 'Content-Type: application/json' -d '{\"before_screenshot\":\"iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFBQIAX8jx0gAAAABJRU5ErkJggg==\",\"after_screenshot\":\"iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M/wHwAEBgIApD5fRAAAAABJRU5ErkJggg==\",\"tolerance\":0.95}'"
+  },
+  "playwright_integration": {
+    "description": "How to capture and convert Playwright screenshots to base64",
+    "code_example": "const screenshot = await page.screenshot({ fullPage: true });\nconst base64Screenshot = screenshot.toString('base64');",
+    "full_example": "// In Playwright test\nimport { test } from '@playwright/test';\nimport axios from 'axios';\n\ntest('visual regression', async ({ page }) => {\n  await page.goto('https://example.com');\n  const screenshot = await page.screenshot();\n  const base64 = screenshot.toString('base64');\n  \n  const response = await axios.post('http://localhost:8000/api/ai-analysis/visual-regression', {\n    before_screenshot: baselineBase64,\n    after_screenshot: base64,\n    tolerance: 0.95\n  });\n  \n  console.log(response.data.data.verdict);\n});"
+  },
+  "how_to_use": {
+    "step_1": "Start AI Analysis Service: python main.py",
+    "step_2": "Run sample examples: python sample_visual_regression.py",
+    "step_3": "Or use curl commands from 'curl_commands' section above",
+    "step_4": "For real tests, capture screenshots with Playwright and convert to base64",
+    "step_5": "Store baseline screenshots and compare with current screenshots"
+  },
+  "response_format": {
+    "description": "Expected API response structure",
+    "example": {
+      "success": true,
+      "data": {
+        "verdict": "PASS or FAIL",
+        "similarity": 0.98,
+        "changes": [
+          {
+            "area": "overall",
+            "type": "size",
+            "description": "Image size changed by 15%",
+            "severity": "medium",
+            "before_value": "10000 bytes",
+            "after_value": "11500 bytes"
+          }
+        ],
+        "llm_description": "AI-generated analysis of the visual changes",
+        "playwright_insights": {
+          "test_stability": "high",
+          "suggested_tolerance": 0.95,
+          "recommended_action": "Keep monitoring"
+        },
+        "suggested_playwright_code": {
+          "assertion": "await expect(page).toHaveScreenshot('baseline.png', { maxDiffPixels: 100 });",
+          "options": "{ threshold: 0.2, maxDiffPixels: 100 }"
+        }
+      }
+    }
+  }
+}

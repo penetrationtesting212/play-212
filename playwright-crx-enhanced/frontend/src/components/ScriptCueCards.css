@@ -1,4 +1,4 @@
-/* Cue Steps (5-step workflow for scripts) */
+/* Cue Steps (6-step workflow for scripts) */
 .cue-steps {
   margin-top: 16px;
   border-top: 1px dashed #e5e7eb;
@@ -57,14 +57,15 @@
 
 .cue-dot.generate { background: #3b82f6; }
 .cue-dot.enhance { background: #6366f1; }
+.cue-dot.testdata { background: #ec4899; }
 .cue-dot.validate { background: #10b981; }
 .cue-dot.finalize { background: #f59e0b; }
 .cue-dot.insights { background: #8b5cf6; }
 
 .cue-steps-grid {
   display: grid;
-  /* Show all 5 cards in a row on wide screens, wrap on smaller screens */
-  grid-template-columns: repeat(5, 1fr);
+  /* Show all 6 cards in a row on wide screens, wrap on smaller screens */
+  grid-template-columns: repeat(6, 1fr);
   gap: 12px;
   width: 100%;
   align-items: stretch;
@@ -117,6 +118,7 @@
 }
 .cue-step-card.generate::before { background: linear-gradient(90deg, #3b82f6, #60a5fa); }
 .cue-step-card.enhance::before { background: linear-gradient(90deg, #6366f1, #818cf8); }
+.cue-step-card.testdata::before { background: linear-gradient(90deg, #ec4899, #f472b6); }
 .cue-step-card.validate::before { background: linear-gradient(90deg, #10b981, #34d399); }
 .cue-step-card.finalize::before { background: linear-gradient(90deg, #f59e0b, #fcd34d); }
 .cue-step-card.insights::before { background: linear-gradient(90deg, #8b5cf6, #a78bfa); }

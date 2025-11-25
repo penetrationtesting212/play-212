@@ -53,7 +53,11 @@ type ActiveView =
   | 'analytics'
   | 'settings';
 
-export const Dashboard: React.FC = () => {
+interface DashboardProps {
+  onLogout: () => void;
+}
+
+export const Dashboard: React.FC<DashboardProps> = ({ onLogout }) => {
   const [activeView, setActiveView] = useState<ActiveView>('overview');
   const [projects, setProjects] = useState<Project[]>([]);
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
@@ -76,6 +80,9 @@ export const Dashboard: React.FC = () => {
   const [selectedScriptForAction, setSelectedScriptForAction] = useState<{ id: string; name: string } | null>(null);
   const [showImportScriptModal, setShowImportScriptModal] = useState(false);
   const [showAllTestRuns, setShowAllTestRuns] = useState(true); // Show all runs by default
+  const [autoOpenTestData, setAutoOpenTestData] = useState(false); // Auto-open test data modal
+  const [showExecuteModal, setShowExecuteModal] = useState(false); // Script execution modal
+  const [currentScriptForExecution, setCurrentScriptForExecution] = useState<{ id: string; name: string } | null>(null);
 
   const token = localStorage.getItem('accessToken');
   const headers = { Authorization: `Bearer ${token}` };
@@ -330,9 +337,34 @@ Navigating to Test Runs...`);
       <aside className={`dashboard-sidebar ${menuOpen ? 'open' : ''}`}>
         <div className="sidebar-header">
           <h2>🎭 Playwright CRX</h2>
-          <button className="menu-toggle" onClick={() => setMenuOpen(!menuOpen)}>
-            {menuOpen ? '✕' : '☰'}
-          </button>
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            <button 
+              className="btn-logout" 
+              onClick={onLogout}
+              title="Logout"
+              style={{
+                padding: '6px 12px',
+                background: '#dc2626',
+                color: 'white',
+                border: 'none',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontSize: '0.875rem',
+                fontWeight: '500',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+                transition: 'background 0.2s'
+              }}
+              onMouseOver={(e) => e.currentTarget.style.background = '#b91c1c'}
+              onMouseOut={(e) => e.currentTarget.style.background = '#dc2626'}
+            >
+              🚪 Logout
+            </button>
+            <button className="menu-toggle" onClick={() => setMenuOpen(!menuOpen)}>
+              {menuOpen ? '✕' : '☰'}
+            </button>
+          </div>
         </div>
 
         {/* Project badge */}
@@ -481,7 +513,7 @@ Navigating to Test Runs...`);
             <div className="view-container">
               <h1 className="view-title" style={{ marginBottom: 24 }}>Test Scripts</h1>
               
-              {/* Standard 5-Step Workflow Template */}
+              {/* Standard 6-Step Workflow Template */}
               <ScriptCueCards
                 script={{
                   id: 'template',
@@ -497,6 +529,16 @@ Navigating to Test Runs...`);
                   setSelectedScriptForAction({ id: scripts[0].id, name: scripts[0].name });
                   setShowEnhancementModal(true);
                 }}
+                onTestData={() => {
+                  if (scripts.length === 0) {
+                    alert('Please import a script first');
+                    return;
+                  }
+                  // Open enhancement modal with auto-open test data flag
+                  setSelectedScriptForAction({ id: scripts[0].id, name: scripts[0].name });
+                  setAutoOpenTestData(true);
+                  setShowEnhancementModal(true);
+                }}
                 onValidate={() => {
                   if (scripts.length === 0) {
                     alert('Please import a script first');
@@ -510,14 +552,16 @@ Navigating to Test Runs...`);
                     alert('Please import a script first');
                     return;
                   }
-                  handleExecuteScript(scripts[0].id, scripts[0].name);
+                  // Open script selection modal
+                  setCurrentScriptForExecution({ id: scripts[0].id, name: scripts[0].name });
+                  setShowExecuteModal(true);
                 }}
                 onInsights={() => {
                   if (scripts.length === 0) {
                     alert('Please import a script first');
                     return;
                   }
-                  setActiveView('allure');
+                  setActiveView('analytics');
                 }}
                 layout="standalone"
                 showHeader={true}
@@ -656,10 +700,14 @@ Navigating to Test Runs...`);
               {/* Script Enhancement Modal */}
               {showEnhancementModal && (
                 <ScriptEnhancementModal
-                  onClose={() => setShowEnhancementModal(false)}
+                  onClose={() => {
+                    setShowEnhancementModal(false);
+                    setAutoOpenTestData(false);
+                  }}
                   onApply={() => {
                     loadData();
                   }}
+                  autoOpenTestData={autoOpenTestData}
                 />
               )}
 
@@ -800,10 +848,290 @@ Navigating to Test Runs...`);
           {/* Analytics */}
           {activeView === 'analytics' && (
             <div className="view-container full-width">
-              <div className="analytics-placeholder">
-                <h3>Analytics Dashboard</h3>
-                <p>Analytics features coming soon...</p>
-              </div>
+              <h1 className="view-title">Analytics Dashboard</h1>
+              
+              {loading ? (
+                <div className="loading-state">Loading analytics...</div>
+              ) : (
+                <>
+                  {/* Summary Stats */}
+                  <div className="analytics-stats">
+                    <div className="stat-card">
+                      <div className="stat-icon" style={{ background: '#dbeafe', color: '#1e40af' }}>📝</div>
+                      <div className="stat-content">
+                        <h4>Total Scripts</h4>
+                        <p className="stat-value">{scripts.length}</p>
+                        <p className="stat-subtitle">{selectedProjectId ? currentProjectName : 'All Projects'}</p>
+                      </div>
+                    </div>
+                    <div className="stat-card">
+                      <div className="stat-icon" style={{ background: '#ddd6fe', color: '#6b21a8' }}>▶️</div>
+                      <div className="stat-content">
+                        <h4>Total Test Runs</h4>
+                        <p className="stat-value">{testRuns.length}</p>
+                        <p className="stat-subtitle">Last 30 days</p>
+                      </div>
+                    </div>
+                    <div className="stat-card">
+                      <div className="stat-icon" style={{ background: '#d1fae5', color: '#065f46' }}>✅</div>
+                      <div className="stat-content">
+                        <h4>Success Rate</h4>
+                        <p className="stat-value">
+                          {testRuns.length > 0
+                            ? `${Math.round((testRuns.filter(r => r.status === 'passed').length / testRuns.length) * 100)}%`
+                            : 'N/A'}
+                        </p>
+                        <p className="stat-subtitle">
+                          {testRuns.filter(r => r.status === 'passed').length} / {testRuns.length} passed
+                        </p>
+                      </div>
+                    </div>
+                    <div className="stat-card">
+                      <div className="stat-icon" style={{ background: '#fef3c7', color: '#92400e' }}>⏱️</div>
+                      <div className="stat-content">
+                        <h4>Avg Duration</h4>
+                        <p className="stat-value">
+                          {testRuns.length > 0 && testRuns.some(r => r.duration)
+                            ? `${Math.round(testRuns.filter(r => r.duration).reduce((sum, r) => sum + (r.duration || 0), 0) / testRuns.filter(r => r.duration).length / 1000)}s`
+                            : 'N/A'}
+                        </p>
+                        <p className="stat-subtitle">Average execution time</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Charts Grid */}
+                  <div className="analytics-grid">
+                    {/* Test Status Distribution */}
+                    <div className="analytics-card">
+                      <h3>📊 Test Status Distribution</h3>
+                      <div className="chart-container">
+                        {testRuns.length > 0 ? (
+                          <div className="pie-chart">
+                            {(() => {
+                              const passed = testRuns.filter(r => r.status === 'passed').length;
+                              const failed = testRuns.filter(r => r.status === 'failed').length;
+                              const error = testRuns.filter(r => r.status === 'error').length;
+                              const total = testRuns.length;
+                              
+                              return (
+                                <>
+                                  <div className="pie-slice-container">
+                                    <div 
+                                      className="pie-slice" 
+                                      style={{
+                                        background: `conic-gradient(
+                                          #10b981 0% ${(passed/total)*100}%,
+                                          #ef4444 ${(passed/total)*100}% ${((passed+failed)/total)*100}%,
+                                          #f59e0b ${((passed+failed)/total)*100}% 100%
+                                        )`,
+                                        width: '200px',
+                                        height: '200px',
+                                        borderRadius: '50%',
+                                        margin: '20px auto'
+                                      }}
+                                    />
+                                  </div>
+                                  <div className="chart-legend">
+                                    <div className="legend-item">
+                                      <span className="legend-color" style={{ background: '#10b981' }}></span>
+                                      <span>Passed: {passed} ({Math.round((passed/total)*100)}%)</span>
+                                    </div>
+                                    <div className="legend-item">
+                                      <span className="legend-color" style={{ background: '#ef4444' }}></span>
+                                      <span>Failed: {failed} ({Math.round((failed/total)*100)}%)</span>
+                                    </div>
+                                    <div className="legend-item">
+                                      <span className="legend-color" style={{ background: '#f59e0b' }}></span>
+                                      <span>Error: {error} ({Math.round((error/total)*100)}%)</span>
+                                    </div>
+                                  </div>
+                                </>
+                              );
+                            })()}
+                          </div>
+                        ) : (
+                          <div className="empty-chart">No test runs available</div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Test Execution Trend */}
+                    <div className="analytics-card">
+                      <h3>📈 Test Execution Trend (Last 7 Days)</h3>
+                      <div className="chart-container">
+                        {testRuns.length > 0 ? (
+                          <div className="bar-chart">
+                            {(() => {
+                              const last7Days = Array.from({ length: 7 }, (_, i) => {
+                                const date = new Date();
+                                date.setDate(date.getDate() - (6 - i));
+                                return date.toISOString().split('T')[0];
+                              });
+                              
+                              const dailyData = last7Days.map(date => {
+                                const dayRuns = testRuns.filter(r => 
+                                  new Date(r.startedAt).toISOString().split('T')[0] === date
+                                );
+                                return {
+                                  date,
+                                  passed: dayRuns.filter(r => r.status === 'passed').length,
+                                  failed: dayRuns.filter(r => r.status === 'failed').length,
+                                  total: dayRuns.length
+                                };
+                              });
+                              
+                              const maxRuns = Math.max(...dailyData.map(d => d.total), 1);
+                              
+                              return (
+                                <div className="bar-chart-container">
+                                  {dailyData.map((day, idx) => (
+                                    <div key={idx} className="bar-group">
+                                      <div className="bar-stack" style={{ height: '150px', justifyContent: 'flex-end' }}>
+                                        {day.total > 0 && (
+                                          <>
+                                            <div 
+                                              className="bar-segment" 
+                                              style={{ 
+                                                height: `${(day.passed/maxRuns)*150}px`,
+                                                background: '#10b981',
+                                                width: '40px',
+                                                borderRadius: '4px 4px 0 0'
+                                              }}
+                                              title={`Passed: ${day.passed}`}
+                                            />
+                                            <div 
+                                              className="bar-segment" 
+                                              style={{ 
+                                                height: `${(day.failed/maxRuns)*150}px`,
+                                                background: '#ef4444',
+                                                width: '40px'
+                                              }}
+                                              title={`Failed: ${day.failed}`}
+                                            />
+                                          </>
+                                        )}
+                                      </div>
+                                      <div className="bar-label">
+                                        {new Date(day.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                                      </div>
+                                      <div className="bar-value">{day.total}</div>
+                                    </div>
+                                  ))}
+                                </div>
+                              );
+                            })()}
+                          </div>
+                        ) : (
+                          <div className="empty-chart">No test runs in the last 7 days</div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Top Scripts by Runs */}
+                    <div className="analytics-card">
+                      <h3>🏆 Most Executed Scripts</h3>
+                      <div className="chart-container">
+                        {scripts.length > 0 && testRuns.length > 0 ? (
+                          <div className="list-chart">
+                            {(() => {
+                              const scriptRunCounts = scripts.map(script => ({
+                                name: script.name,
+                                count: testRuns.filter(r => r.script.name === script.name).length
+                              })).filter(s => s.count > 0).sort((a, b) => b.count - a.count).slice(0, 5);
+                              
+                              const maxCount = Math.max(...scriptRunCounts.map(s => s.count), 1);
+                              
+                              return scriptRunCounts.map((script, idx) => (
+                                <div key={idx} className="list-item">
+                                  <div className="list-label">{script.name}</div>
+                                  <div className="list-bar-container">
+                                    <div 
+                                      className="list-bar" 
+                                      style={{ 
+                                        width: `${(script.count/maxCount)*100}%`,
+                                        background: '#667eea'
+                                      }}
+                                    />
+                                  </div>
+                                  <div className="list-value">{script.count} runs</div>
+                                </div>
+                              ));
+                            })()}
+                          </div>
+                        ) : (
+                          <div className="empty-chart">No script execution data</div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Script Language Distribution */}
+                    <div className="analytics-card">
+                      <h3>💻 Language Distribution</h3>
+                      <div className="chart-container">
+                        {scripts.length > 0 ? (
+                          <div className="list-chart">
+                            {(() => {
+                              const languageCounts = scripts.reduce((acc, script) => {
+                                acc[script.language] = (acc[script.language] || 0) + 1;
+                                return acc;
+                              }, {} as Record<string, number>);
+                              
+                              const languageData = Object.entries(languageCounts)
+                                .map(([lang, count]) => ({ language: lang, count }))
+                                .sort((a, b) => b.count - a.count);
+                              
+                              const total = scripts.length;
+                              const colors = ['#667eea', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
+                              
+                              return languageData.map((item, idx) => (
+                                <div key={idx} className="list-item">
+                                  <div className="list-label">{item.language}</div>
+                                  <div className="list-bar-container">
+                                    <div 
+                                      className="list-bar" 
+                                      style={{ 
+                                        width: `${(item.count/total)*100}%`,
+                                        background: colors[idx % colors.length]
+                                      }}
+                                    />
+                                  </div>
+                                  <div className="list-value">{item.count} ({Math.round((item.count/total)*100)}%)</div>
+                                </div>
+                              ));
+                            })()}
+                          </div>
+                        ) : (
+                          <div className="empty-chart">No scripts available</div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Recent Activity */}
+                  <div className="analytics-card" style={{ marginTop: '24px' }}>
+                    <h3>🕒 Recent Test Activity</h3>
+                    <div className="recent-activity">
+                      {testRuns.length > 0 ? (
+                        <div className="activity-list">
+                          {testRuns.slice(0, 10).map((run, idx) => (
+                            <div key={idx} className="activity-item">
+                              <span className={`status-badge ${run.status}`}>{run.status}</span>
+                              <span className="activity-script">{run.script.name}</span>
+                              <span className="activity-time">{new Date(run.startedAt).toLocaleString()}</span>
+                              {run.duration && <span className="activity-duration">⏱️ {Math.round(run.duration/1000)}s</span>}
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="empty-state" style={{ padding: '40px' }}>
+                          <p>No recent test activity</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
           )}
 
@@ -820,6 +1148,129 @@ Navigating to Test Runs...`);
           )}
         </div>
       </main>
+
+      {/* Script Execution Modal */}
+      {showExecuteModal && (
+        <div className="modal-overlay" onClick={() => setShowExecuteModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '600px' }}>
+            <div className="modal-header">
+              <h2>🚀 Execute Script</h2>
+              <button className="modal-close" onClick={() => setShowExecuteModal(false)}>✕</button>
+            </div>
+            <div className="modal-body" style={{ maxHeight: '500px', overflowY: 'auto' }}>
+              <p style={{ marginBottom: '20px', color: '#666' }}>
+                Choose a script to execute:
+              </p>
+
+              {/* Current Script Option */}
+              {currentScriptForExecution && (
+                <div style={{ marginBottom: '24px' }}>
+                  <h3 style={{ fontSize: '14px', fontWeight: '600', marginBottom: '12px', color: '#333' }}>
+                    📝 Current Script
+                  </h3>
+                  <div 
+                    className="content-card" 
+                    style={{ 
+                      padding: '16px', 
+                      cursor: 'pointer',
+                      border: '2px solid #3b82f6',
+                      background: '#eff6ff'
+                    }}
+                    onClick={() => {
+                      handleExecuteScript(currentScriptForExecution.id, currentScriptForExecution.name);
+                      setShowExecuteModal(false);
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <div style={{ 
+                        width: '40px', 
+                        height: '40px', 
+                        borderRadius: '8px', 
+                        background: '#3b82f6',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '20px'
+                      }}>
+                        ▶️
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontWeight: '600', fontSize: '15px', color: '#1e40af' }}>
+                          {currentScriptForExecution.name}
+                        </div>
+                        <div style={{ fontSize: '12px', color: '#64748b', marginTop: '4px' }}>
+                          Execute the current working script
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Database Scripts */}
+              <div>
+                <h3 style={{ fontSize: '14px', fontWeight: '600', marginBottom: '12px', color: '#333' }}>
+                  🗄️ Scripts from Database ({scripts.length})
+                </h3>
+                {scripts.length > 0 ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {scripts.map((script) => (
+                      <div 
+                        key={script.id}
+                        className="content-card" 
+                        style={{ 
+                          padding: '12px 16px', 
+                          cursor: 'pointer',
+                          transition: 'all 0.2s',
+                          border: '1px solid #e5e7eb'
+                        }}
+                        onClick={() => {
+                          handleExecuteScript(script.id, script.name);
+                          setShowExecuteModal(false);
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.background = '#f9fafb';
+                          e.currentTarget.style.borderColor = '#3b82f6';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = 'white';
+                          e.currentTarget.style.borderColor = '#e5e7eb';
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                          <div style={{ fontSize: '20px' }}>📄</div>
+                          <div style={{ flex: 1 }}>
+                            <div style={{ fontWeight: '500', fontSize: '14px', color: '#1f2937' }}>
+                              {script.name}
+                            </div>
+                            <div style={{ fontSize: '11px', color: '#9ca3af', marginTop: '2px', display: 'flex', gap: '12px' }}>
+                              <span>📅 {new Date(script.createdAt).toLocaleDateString()}</span>
+                              <span className="language-badge" style={{ fontSize: '10px', padding: '2px 6px' }}>
+                                {script.language}
+                              </span>
+                            </div>
+                          </div>
+                          <div style={{ fontSize: '18px', color: '#10b981' }}>▶️</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="empty-state" style={{ padding: '32px', textAlign: 'center' }}>
+                    <div style={{ fontSize: '32px', marginBottom: '8px' }}>📝</div>
+                    <p style={{ color: '#9ca3af' }}>No scripts available in database</p>
+                  </div>
+                )}
+              </div>
+            </div>
+            <div className="modal-footer" style={{ borderTop: '1px solid #e5e7eb', paddingTop: '16px' }}>
+              <button className="btn-secondary" onClick={() => setShowExecuteModal(false)}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

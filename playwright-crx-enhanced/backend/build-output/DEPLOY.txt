@@ -1,0 +1,60 @@
+# Backend Deployment Instructions
+
+## Prerequisites
+- Node.js 20+ installed
+- PostgreSQL database
+- Environment variables configured
+
+## Deployment Steps
+
+### 1. Extract the zip file
+unzip backend-2025-11-21.zip
+
+### 2. Install dependencies
+cd backend
+npm ci --production
+
+### 3. Configure environment
+cp .env.example .env
+# Edit .env with your production values:
+# - DATABASE_URL
+# - PORT
+# - JWT_SECRET
+# - AI_ANALYSIS_SERVICE_URL (if using AI features)
+
+### 4. Run database migrations
+npm run migrate:deploy
+
+### 5. Start the server
+npm start
+
+## Production Start Options
+
+### Option 1: Direct Node.js
+node dist/index.js
+
+### Option 2: PM2 (recommended)
+npm install -g pm2
+pm2 start dist/index.js --name playwright-backend
+pm2 save
+pm2 startup
+
+### Option 3: Docker
+docker build -t playwright-backend .
+docker run -p 3001:3001 --env-file .env playwright-backend
+
+## Health Check
+curl http://localhost:3001/health
+
+## Environment Variables Required
+- PORT=3001
+- DATABASE_URL=postgresql://user:password@host:port/database
+- JWT_SECRET=your-secret-key
+- AI_ANALYSIS_SERVICE_URL=http://localhost:8000 (optional)
+
+## File Structure
+- dist/          - Compiled JavaScript
+- prisma/        - Database schema
+- migrations/    - Database migrations
+- package.json   - Dependencies
+- .env.example   - Environment template

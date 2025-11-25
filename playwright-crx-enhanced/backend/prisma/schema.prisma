@@ -63,6 +63,7 @@ model Script {
   browserType         String               @default("chromium")
   viewport            Json?
   testIdAttribute     String               @default("data-testid")
+  workflowStatus      String               @default("draft")
   createdAt           DateTime             @default(now())
   updatedAt           DateTime             @updatedAt
   breakpoints         Breakpoint[]
@@ -74,6 +75,7 @@ model Script {
   @@index([userId])
   @@index([projectId])
   @@index([createdAt])
+  @@index([workflowStatus])
 }
 
 model TestRun {

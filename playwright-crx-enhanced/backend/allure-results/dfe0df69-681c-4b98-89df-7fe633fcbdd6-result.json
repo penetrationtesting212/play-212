@@ -1,0 +1,22 @@
+{
+  "uuid": "dfe0df69-681c-4b98-89df-7fe633fcbdd6",
+  "historyId": "dfe0df69-681c-4b98-89df-7fe633fcbdd6",
+  "testCaseId": "dfe0df69-681c-4b98-89df-7fe633fcbdd6",
+  "fullName": "dfe0df69-681c-4b98-89df-7fe633fcbdd6",
+  "name": "dfe0df69-681c-4b98-89df-7fe633fcbdd6",
+  "status": "passed",
+  "statusDetails": {},
+  "stage": "finished",
+  "start": 1764000370615,
+  "stop": 1764000370615,
+  "steps": [
+    {
+      "name": "navigate https://www.google.com/",
+      "status": "passed",
+      "statusDetails": {},
+      "stage": "finished",
+      "start": 1764000369970,
+      "stop": 1764000370270
+    }
+  ]
+}

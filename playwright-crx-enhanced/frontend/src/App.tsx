@@ -58,6 +58,19 @@ function App() {
     }
   };
 
+  const handleLogout = () => {
+    // Clear access token
+    localStorage.removeItem('accessToken');
+    // Clear axios default headers
+    delete axios.defaults.headers.common['Authorization'];
+    // Update authentication state
+    setIsAuthenticated(false);
+    // Reset form fields
+    setEmail('');
+    setPassword('');
+    setError('');
+  };
+
   if (!isAuthenticated) {
     return (
       <Routes>
@@ -128,7 +141,7 @@ function App() {
     );
   }
 
-  return <Dashboard />;
+  return <Dashboard onLogout={handleLogout} />;
 }
 
 export default App;

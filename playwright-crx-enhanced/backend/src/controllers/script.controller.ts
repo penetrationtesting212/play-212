@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import { AppError } from '../middleware/errorHandler';
 import pool from '../db';
 import { randomUUID } from 'crypto';
-import { allureService } from '../services/allure.service';
+import { testRunnerService } from '../services/testRuns/testRunner.service';
 
 
 /**
@@ -67,7 +67,7 @@ export const getScript = async (req: Request, res: Response) => {
 
     const { rows } = await pool.query(
       `SELECT s.id, s.name, s.description, s.language, s.code, s."browserType" as "browserType",
-              s.viewport, s."testIdAttribute" as "testIdAttribute",
+              s.viewport, s."testIdAttribute" as "testIdAttribute", s."workflowStatus" as "workflowStatus",
               s."createdAt" as "createdAt", s."updatedAt" as "updatedAt", s."projectId" as "projectId",
               p.name AS "projectName"
        FROM "Script" s
@@ -92,6 +92,7 @@ export const getScript = async (req: Request, res: Response) => {
         browserType: script.browserType,
         viewport: script.viewport,
         testIdAttribute: script.testIdAttribute,
+        workflowStatus: script.workflowStatus || 'draft',
         createdAt: script.createdAt,
         updatedAt: script.updatedAt,
         projectId: script.projectId,
@@ -129,10 +130,10 @@ export const createScript = async (req: Request, res: Response) => {
     const id = randomUUID();
     const { rows } = await pool.query(
       `INSERT INTO "Script" (id, name, description, language, code, "userId", "projectId",
-                              "browserType", "createdAt", "updatedAt")
-       VALUES ($1, $2, $3, COALESCE($4, 'typescript'), $5, $6, $7, 'chromium', now(), now())
+                              "browserType", "workflowStatus", "createdAt", "updatedAt")
+       VALUES ($1, $2, $3, COALESCE($4, 'typescript'), $5, $6, $7, 'chromium', 'draft', now(), now())
        RETURNING id, name, description, language, code, "browserType", viewport, "testIdAttribute",
-                 "createdAt", "updatedAt", "projectId"`,
+                 "workflowStatus", "createdAt", "updatedAt", "projectId"`,
       [id, name, description ?? null, language, code, userId, projectId ?? null]
     );
     const script = rows[0];
@@ -187,7 +188,7 @@ export const updateScript = async (req: Request, res: Response) => {
            "updatedAt" = now()
        WHERE id = $1
        RETURNING id, name, description, language, code, "browserType", viewport, "testIdAttribute",
-                 "createdAt", "updatedAt", "projectId"`,
+                 "workflowStatus", "createdAt", "updatedAt", "projectId"`,
       [id, name ?? null, description ?? null, language ?? null, code ?? null, browserType ?? null, viewport ?? null, testIdAttribute ?? null]
     );
     const script = rows[0];
@@ -1048,7 +1049,7 @@ export const applyEnhancement = async (req: Request, res: Response) => {
     // Update the script with enhanced code
     const { rows } = await pool.query(
       `UPDATE "Script"
-       SET code = $2, "updatedAt" = now()
+       SET code = $2, "updatedAt" = CURRENT_TIMESTAMP
        WHERE id = $1
        RETURNING id, name, "updatedAt"`,
       [id, enhancedCode]
@@ -1205,69 +1206,12 @@ export const executeScript = async (req: Request, res: Response) => {
 
     const testRun = runRows[0];
 
-    // Simulate script execution asynchronously
-    // Using setImmediate instead of setTimeout to avoid blocking the response
+    // Execute script using Playwright Test Runner
     setImmediate(async () => {
       try {
-        // Start Allure test tracking
-        await allureService.startTest(testRun.id, script.name);
-
-        const completedAt = new Date();
-        const duration = completedAt.getTime() - startedAt.getTime();
-        const status = Math.random() > 0.3 ? 'passed' : 'failed'; // 70% pass rate
-
-        // Create some test steps and record in Allure
-        const steps = [
-          { stepNumber: 1, action: 'navigate', selector: null, value: 'https://example.com', status: 'passed', duration: 150 },
-          { stepNumber: 2, action: 'click', selector: '[data-testid="submit-btn"]', value: null, status: 'passed', duration: 50 },
-          { stepNumber: 3, action: 'fill', selector: 'input[name="username"]', value: 'testuser', status: 'passed', duration: 30 },
-          { stepNumber: 4, action: 'expect', selector: '.result', value: 'Success', status: status === 'passed' ? 'passed' : 'failed', duration: 100 }
-        ];
-
-        for (const step of steps) {
-          // Record in database
-          await pool.query(
-            `INSERT INTO "TestStep" ("testRunId", "stepNumber", action, selector, value, status, duration)
-             VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-            [testRun.id, step.stepNumber, step.action, step.selector, step.value, step.status, step.duration]
-          );
-          
-          // Record in Allure
-          await allureService.recordStep(
-            testRun.id,
-            `${step.action} ${step.selector || step.value || ''}`,
-            step.status as 'passed' | 'failed',
-            step.duration
-          );
-        }
-
-        // End Allure test
-        await allureService.endTest(
-          testRun.id,
-          status as 'passed' | 'failed',
-          status === 'failed' ? 'Test failed at validation step' : undefined
-        );
-
-        // Generate Allure report
-        await allureService.generateReport(testRun.id);
-        const reportUrl = await allureService.getReportUrl(testRun.id);
-
-        // Update test run with results and report URL
-        await pool.query(
-          `UPDATE "TestRun"
-           SET status = $1, "completedAt" = $2, duration = $3, "executionReportUrl" = $4
-           WHERE id = $5`,
-          [status, completedAt, duration, reportUrl, testRun.id]
-        );
+        await testRunnerService.startTestRun(testRunId, id, userId);
       } catch (error) {
-        console.error('Error updating test run:', error);
-        // Update test run with error status
-        await pool.query(
-          `UPDATE "TestRun"
-           SET status = $1, "completedAt" = $2, "errorMsg" = $3
-           WHERE id = $4`,
-          ['failed', new Date(), (error as Error).message, testRun.id]
-        );
+        console.error('Error executing script with Playwright:', error);
       }
     });
 
@@ -1389,5 +1333,70 @@ export const batchEnhanceScripts = async (req: Request, res: Response) => {
     } else {
       res.status(500).json({ success: false, error: error.message || 'Failed to batch enhance scripts' });
     }
+  }
+};
+
+/**
+ * Update workflow status (for human validation actions)
+ */
+export const updateWorkflowStatus = async (req: Request, res: Response): Promise<any> => {
+  try {
+    const userId = (req as any).user.userId;
+    const { id } = req.params;
+    const { workflowStatus, comments } = req.body;
+
+    // Validate workflow status
+    const validStatuses = ['draft', 'ai_enhanced', 'testdata_ready', 'human_review', 'finalized', 'archived'];
+    if (!validStatuses.includes(workflowStatus)) {
+      return res.status(400).json({
+        success: false,
+        error: `Invalid workflow status. Must be one of: ${validStatuses.join(', ')}`
+      });
+    }
+
+    // Check if script exists and belongs to user
+    const existing = await pool.query(
+      `SELECT id, "workflowStatus" FROM "Script" WHERE id = $1 AND "userId" = $2`,
+      [id, userId]
+    );
+
+    if (!existing.rowCount) {
+      return res.status(404).json({
+        success: false,
+        error: 'Script not found'
+      });
+    }
+
+    const previousStatus = existing.rows[0].workflowStatus;
+
+    // Update workflow status
+    const { rows } = await pool.query(
+      `UPDATE "Script"
+       SET "workflowStatus" = $2,
+           "updatedAt" = now()
+       WHERE id = $1
+       RETURNING id, name, "workflowStatus", "updatedAt"`,
+      [id, workflowStatus]
+    );
+
+    const script = rows[0];
+
+    res.status(200).json({
+      success: true,
+      data: {
+        scriptId: script.id,
+        scriptName: script.name,
+        previousStatus,
+        currentStatus: script.workflowStatus,
+        comments,
+        updatedAt: script.updatedAt
+      },
+      message: `Workflow status updated from ${previousStatus} to ${workflowStatus}`
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to update workflow status'
+    });
   }
 };

@@ -11,6 +11,7 @@ interface Props {
   script: ScriptMinimal;
   onGenerate?: (script: ScriptMinimal) => void;
   onEnhance?: (script: ScriptMinimal) => void;
+  onTestData?: (script: ScriptMinimal) => void;
   onValidate?: (script: ScriptMinimal) => void;
   onFinalize?: (script: ScriptMinimal) => void;
   onInsights?: (script: ScriptMinimal) => void;
@@ -18,14 +19,14 @@ interface Props {
   showHeader?: boolean;
 }
 
-const ScriptCueCards: React.FC<Props> = ({ script, onGenerate, onEnhance, onValidate, onFinalize, onInsights, layout = 'embedded', showHeader = true }) => {
+const ScriptCueCards: React.FC<Props> = ({ script, onGenerate, onEnhance, onTestData, onValidate, onFinalize, onInsights, layout = 'embedded', showHeader = true }) => {
   const fallback = (label: string) => () => alert(`${label} is coming soon for: ${script.name}`);
 
   const storageKey = `cueProgress:${script.id}`;
   const [currentStep, setCurrentStep] = useState<number>(() => {
     const saved = localStorage.getItem(storageKey);
     const n = saved ? parseInt(saved, 10) : 1;
-    return isNaN(n) ? 1 : Math.min(Math.max(n, 1), 5);
+    return isNaN(n) ? 1 : Math.min(Math.max(n, 1), 6);
   });
 
   useEffect(() => {
@@ -42,9 +43,10 @@ const ScriptCueCards: React.FC<Props> = ({ script, onGenerate, onEnhance, onVali
     const handlers: Record<number, ((s: ScriptMinimal) => void) | undefined> = {
       1: onGenerate,
       2: onEnhance,
-      3: onValidate,
-      4: onFinalize,
-      5: onInsights,
+      3: onTestData,
+      4: onValidate,
+      5: onFinalize,
+      6: onInsights,
     };
     const handler = handlers[step] || fallback('Resume');
     if (handler) handler(script);
@@ -57,9 +59,9 @@ const ScriptCueCards: React.FC<Props> = ({ script, onGenerate, onEnhance, onVali
           <div className="cue-steps-header">
             <div>
               <span className="cue-steps-title">New Script Workflow</span>
-              <span className="cue-steps-subtitle">Guided 5-step process</span>
+              <span className="cue-steps-subtitle">Guided 6-step process</span>
             </div>
-            <span className="cue-steps-badge" aria-label={`Progress: Step ${currentStep} of 5`}>Step {currentStep} / 5</span>
+            <span className="cue-steps-badge" aria-label={`Progress: Step ${currentStep} of 6`}>Step {currentStep} / 6</span>
             <button
               className="btn-secondary"
               style={{ marginLeft: 8 }}
@@ -115,9 +117,31 @@ const ScriptCueCards: React.FC<Props> = ({ script, onGenerate, onEnhance, onVali
             </div>
           </div>
 
-          <div className="content-card cue-step-card validate">
+          <div className="content-card cue-step-card testdata">
             <div className="cue-step-card-header">
               <div className="cue-step-icon">3</div>
+              <div className="cue-step-headings">
+                <div className="step-title">Generate Test Data</div>
+                <div className="step-desc">Create boundary, equivalence, and security test data.</div>
+              </div>
+            </div>
+            <div className="cue-step-card-content">
+              <p>Generate banking-grade test data with boundary value analysis, equivalence partitioning, and security testing.</p>
+            </div>
+            <div className="cue-step-card-actions">
+              <button
+                className="btn-secondary step-action"
+                onClick={triggerStep(3, onTestData || fallback('Generate Test Data'))}
+                aria-current={currentStep === 3 ? 'step' : undefined}
+              >
+                Generate Test Data
+              </button>
+            </div>
+          </div>
+
+          <div className="content-card cue-step-card validate">
+            <div className="cue-step-card-header">
+              <div className="cue-step-icon">4</div>
               <div className="cue-step-headings">
                 <div className="step-title">Human Validation</div>
                 <div className="step-desc">Review logic and verify selectors.</div>
@@ -129,8 +153,8 @@ const ScriptCueCards: React.FC<Props> = ({ script, onGenerate, onEnhance, onVali
             <div className="cue-step-card-actions">
               <button
                 className="btn-secondary step-action"
-                onClick={triggerStep(3, onValidate || fallback('Human Validation'))}
-                aria-current={currentStep === 3 ? 'step' : undefined}
+                onClick={triggerStep(4, onValidate || fallback('Human Validation'))}
+                aria-current={currentStep === 4 ? 'step' : undefined}
               >
                 Start Validation Review
               </button>
@@ -139,7 +163,7 @@ const ScriptCueCards: React.FC<Props> = ({ script, onGenerate, onEnhance, onVali
 
           <div className="content-card cue-step-card finalize">
             <div className="cue-step-card-header">
-              <div className="cue-step-icon">4</div>
+              <div className="cue-step-icon">5</div>
               <div className="cue-step-headings">
                 <div className="step-title">Finalize / Run</div>
                 <div className="step-desc">Save, run, and monitor execution in real-time.</div>
@@ -151,8 +175,8 @@ const ScriptCueCards: React.FC<Props> = ({ script, onGenerate, onEnhance, onVali
             <div className="cue-step-card-actions">
               <button
                 className="btn-primary step-action"
-                onClick={triggerStep(4, onFinalize || fallback('Finalize / Run'))}
-                aria-current={currentStep === 4 ? 'step' : undefined}
+                onClick={triggerStep(5, onFinalize || fallback('Finalize / Run'))}
+                aria-current={currentStep === 5 ? 'step' : undefined}
               >
                 Finalize and Execute
               </button>
@@ -161,7 +185,7 @@ const ScriptCueCards: React.FC<Props> = ({ script, onGenerate, onEnhance, onVali
 
           <div className="content-card cue-step-card insights">
             <div className="cue-step-card-header">
-              <div className="cue-step-icon">5</div>
+              <div className="cue-step-icon">6</div>
               <div className="cue-step-headings">
                 <div className="step-title">AI Insights</div>
                 <div className="step-desc">View reliability trends, flaky steps, and healing tips.</div>
@@ -173,8 +197,8 @@ const ScriptCueCards: React.FC<Props> = ({ script, onGenerate, onEnhance, onVali
             <div className="cue-step-card-actions">
               <button
                 className="btn-secondary step-action"
-                onClick={triggerStep(5, onInsights || fallback('AI Insights'))}
-                aria-current={currentStep === 5 ? 'step' : undefined}
+                onClick={triggerStep(6, onInsights || fallback('AI Insights'))}
+                aria-current={currentStep === 6 ? 'step' : undefined}
               >
                 Open Insights
               </button>
@@ -191,9 +215,9 @@ const ScriptCueCards: React.FC<Props> = ({ script, onGenerate, onEnhance, onVali
         <div className="cue-steps-header">
           <div>
             <span className="cue-steps-title">{script.name}</span>
-            <span className="cue-steps-subtitle">{script.language || 'Script'} · 5-step workflow</span>
+            <span className="cue-steps-subtitle">{script.language || 'Script'} · 6-step workflow</span>
           </div>
-          <span className="cue-steps-badge" aria-label={`Progress: Step ${currentStep} of 5`}>Step {currentStep} / 5</span>
+          <span className="cue-steps-badge" aria-label={`Progress: Step ${currentStep} of 6`}>Step {currentStep} / 6</span>
           <button
             className="btn-secondary"
             style={{ marginLeft: 8 }}
@@ -210,11 +234,13 @@ const ScriptCueCards: React.FC<Props> = ({ script, onGenerate, onEnhance, onVali
         <span className="cue-line" />
         <span className={`cue-dot enhance ${currentStep >= 2 ? 'active' : ''}`} aria-label="Enhance with AI step" />
         <span className="cue-line" />
-        <span className={`cue-dot validate ${currentStep >= 3 ? 'active' : ''}`} aria-label="Human validation step" />
+        <span className={`cue-dot testdata ${currentStep >= 3 ? 'active' : ''}`} aria-label="Generate test data step" />
         <span className="cue-line" />
-        <span className={`cue-dot finalize ${currentStep >= 4 ? 'active' : ''}`} aria-label="Finalize and run step" />
+        <span className={`cue-dot validate ${currentStep >= 4 ? 'active' : ''}`} aria-label="Human validation step" />
         <span className="cue-line" />
-        <span className={`cue-dot insights ${currentStep >= 5 ? 'active' : ''}`} aria-label="AI insights step" />
+        <span className={`cue-dot finalize ${currentStep >= 5 ? 'active' : ''}`} aria-label="Finalize and run step" />
+        <span className="cue-line" />
+        <span className={`cue-dot insights ${currentStep >= 6 ? 'active' : ''}`} aria-label="AI insights step" />
       </div>
 
       <div className="cue-steps-grid">
@@ -262,9 +288,31 @@ const ScriptCueCards: React.FC<Props> = ({ script, onGenerate, onEnhance, onVali
           </div>
         </div>
 
-        <div className="cue-step-card validate">
+        <div className="cue-step-card testdata">
           <div className="cue-step-card-header">
             <div className="cue-step-icon">3</div>
+            <div className="cue-step-headings">
+              <div className="step-title">Generate Test Data</div>
+              <div className="step-desc">Create boundary, equivalence, and security test data.</div>
+            </div>
+          </div>
+          <div className="cue-step-card-content">
+            <p>Generate banking-grade test data with boundary value analysis, equivalence partitioning, and security testing.</p>
+          </div>
+          <div className="cue-step-card-actions">
+            <button
+              className="btn-secondary step-action"
+              onClick={triggerStep(3, onTestData || fallback('Generate Test Data'))}
+              aria-current={currentStep === 3 ? 'step' : undefined}
+            >
+              Generate Test Data
+            </button>
+          </div>
+        </div>
+
+        <div className="cue-step-card validate">
+          <div className="cue-step-card-header">
+            <div className="cue-step-icon">4</div>
             <div className="cue-step-headings">
               <div className="step-title">Human Validation</div>
               <div className="step-desc">Review logic and verify selectors.</div>
@@ -276,8 +324,8 @@ const ScriptCueCards: React.FC<Props> = ({ script, onGenerate, onEnhance, onVali
           <div className="cue-step-card-actions">
             <button
               className="btn-secondary step-action"
-              onClick={triggerStep(3, onValidate || fallback('Human Validation'))}
-              aria-current={currentStep === 3 ? 'step' : undefined}
+              onClick={triggerStep(4, onValidate || fallback('Human Validation'))}
+              aria-current={currentStep === 4 ? 'step' : undefined}
             >
               Start Validation Review
             </button>
@@ -286,7 +334,7 @@ const ScriptCueCards: React.FC<Props> = ({ script, onGenerate, onEnhance, onVali
 
         <div className="cue-step-card finalize">
           <div className="cue-step-card-header">
-            <div className="cue-step-icon">4</div>
+            <div className="cue-step-icon">5</div>
             <div className="cue-step-headings">
               <div className="step-title">Finalize / Run</div>
               <div className="step-desc">Save, run, and monitor execution in real-time.</div>
@@ -298,8 +346,8 @@ const ScriptCueCards: React.FC<Props> = ({ script, onGenerate, onEnhance, onVali
           <div className="cue-step-card-actions">
             <button
               className="btn-primary step-action"
-              onClick={triggerStep(4, onFinalize || fallback('Finalize / Run'))}
-              aria-current={currentStep === 4 ? 'step' : undefined}
+              onClick={triggerStep(5, onFinalize || fallback('Finalize / Run'))}
+              aria-current={currentStep === 5 ? 'step' : undefined}
             >
               Finalize and Execute
             </button>
@@ -308,7 +356,7 @@ const ScriptCueCards: React.FC<Props> = ({ script, onGenerate, onEnhance, onVali
 
         <div className="cue-step-card insights">
           <div className="cue-step-card-header">
-            <div className="cue-step-icon">5</div>
+            <div className="cue-step-icon">6</div>
             <div className="cue-step-headings">
               <div className="step-title">AI Insights</div>
               <div className="step-desc">View reliability trends, flaky steps, and healing tips.</div>
@@ -320,8 +368,8 @@ const ScriptCueCards: React.FC<Props> = ({ script, onGenerate, onEnhance, onVali
           <div className="cue-step-card-actions">
             <button
               className="btn-secondary step-action"
-              onClick={triggerStep(5, onInsights || fallback('AI Insights'))}
-              aria-current={currentStep === 5 ? 'step' : undefined}
+              onClick={triggerStep(6, onInsights || fallback('AI Insights'))}
+              aria-current={currentStep === 6 ? 'step' : undefined}
             >
               Open Insights
             </button>

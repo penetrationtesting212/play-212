@@ -10,6 +10,8 @@
   justify-content: center;
   z-index: 1000;
   animation: fadeIn 0.2s ease;
+  padding: 20px;
+  box-sizing: border-box;
 }
 
 @keyframes fadeIn {
@@ -20,13 +22,14 @@
 .enhancement-modal {
   background: white;
   border-radius: 12px;
-  width: 98%;
+  width: 95%;
   max-width: 1800px;
   max-height: 98vh;
   display: flex;
   flex-direction: column;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
   animation: slideUp 0.3s ease;
+  margin: 0 auto;
 }
 
 @keyframes slideUp {
@@ -194,6 +197,8 @@
   overflow-y: auto;
   padding: 24px 32px;
   min-height: 600px;
+  width: 100%;
+  max-width: 100%;
 }
 
 /* Better scrollbar styling */
@@ -234,6 +239,9 @@
   transition: all 0.2s;
   background: white;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .suggestion-card.selected {
@@ -293,6 +301,12 @@
   background: #fef3c7;
   border-left: 4px solid #f59e0b;
   border-radius: 4px;
+  width: calc(100% - 30px);
+  max-width: 100%;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  white-space: normal;
+  box-sizing: border-box;
 }
 
 .code-comparison {
@@ -301,6 +315,8 @@
   align-items: stretch;
   margin-left: 30px;
   flex-wrap: wrap;
+  width: calc(100% - 30px);
+  max-width: 100%;
 }
 
 @media (max-width: 1200px) {
@@ -317,7 +333,7 @@
 
 .code-block {
   flex: 1;
-  min-width: 0;
+  min-width: 500px;
   background: white;
   border: 2px solid #e5e7eb;
   border-radius: 8px;

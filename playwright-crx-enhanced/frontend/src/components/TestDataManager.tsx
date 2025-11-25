@@ -453,8 +453,23 @@ test('${item.name}', async ({ page }) => {
                   }}
                   className="form-textarea"
                   rows={8}
-                  placeholder='{"username": "test@example.com", "password": "Test@123"}'
+                  placeholder='{"username":"test@example.com","password":"Test@123"}'
                 />
+                {genForm.dataType === 'customJson' && (
+                  <div style={{ marginTop: 12, padding: 12, background: '#f0fdf4', border: '1px solid #86efac', borderRadius: 8 }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: '#166534', marginBottom: 8 }}>💡 Available Faker Functions:</div>
+                    <div style={{ fontSize: 12, color: '#15803d', lineHeight: 1.6 }}>
+                      • <code>{'{{'}faker.name{'}}'}</code> - Random full name<br/>
+                      • <code>{'{{'}faker.email{'}}'}</code> - Random email<br/>
+                      • <code>{'{{'}faker.phone{'}}'}</code> - Random phone number<br/>
+                      • <code>{'{{'}faker.number(min-max){'}}'}</code> - Random number in range<br/>
+                      • <code>{'{{'}faker.choice([A,B,C]){'}}'}</code> - Random choice from array<br/>
+                      • <code>{'{{'}faker.date(2020-2024){'}}'}</code> - Random date in range<br/>
+                      • <code>{'{{'}faker.uuid{'}}'}</code> - Random UUID<br/>
+                      • <code>{'{{'}faker.boolean{'}}'}</code> - Random true/false
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
@@ -524,6 +539,10 @@ test('${item.name}', async ({ page }) => {
                     <option value="user">User</option>
                     <option value="product">Product</option>
                     <option value="order">Order</option>
+                    <option value="boundaryValue">Boundary Value Analysis</option>
+                    <option value="equivalencePartition">Equivalence Partitioning</option>
+                    <option value="securityTest">Security Testing</option>
+                    <option value="customJson">Custom JSON (Dynamic)</option>
                     <option value="custom">Custom</option>
                   </select>
                 </div>
@@ -553,7 +572,14 @@ test('${item.name}', async ({ page }) => {
               </div>
 
               <div className="form-group">
-                <label>Sample Data (JSON)</label>
+                <label>
+                  {genForm.dataType === 'customJson' ? 'JSON Template (Dynamic Generation)' : 'Sample Data (JSON)'}
+                  {genForm.dataType === 'customJson' && (
+                    <div style={{ fontSize: 12, color: '#6b7280', marginTop: 4 }}>
+                      Use <code>{'{{'}faker.field{'}}'}</code> for dynamic values. Examples: <code>{'{{'}faker.name{'}}'}</code>, <code>{'{{'}faker.email{'}}'}</code>, <code>{'{{'}faker.number(1-100){'}}'}</code>
+                    </div>
+                  )}
+                </label>
                 <textarea
                   value={JSON.stringify(genForm.sample_data, null, 2)}
                   onChange={(e) => {
@@ -562,8 +588,10 @@ test('${item.name}', async ({ page }) => {
                     } catch {}
                   }}
                   className="form-textarea"
-                  rows={6}
-                  placeholder='{"username":"test@example.com","password":"Test@123"}'
+                  rows={genForm.dataType === 'customJson' ? 12 : 6}
+                  placeholder={genForm.dataType === 'customJson' 
+                    ? '{\n  "name": "{{faker.name}}",\n  "email": "{{faker.email}}",\n  "age": "{{faker.number(18-65)}}",\n  "salary": "{{faker.number(30000-150000)}}",\n  "department": "{{faker.choice([Finance,IT,HR,Sales])}}",\n  "joinDate": "{{faker.date(2020-2024)}}"\n}'
+                    : '{"username":"test@example.com","password":"Test@123"}'}
                 />
               </div>
 
